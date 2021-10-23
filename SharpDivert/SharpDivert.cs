@@ -1,5 +1,5 @@
 ﻿/*
- * WinDivert.cs
+ * SharpDivert.cs
  * Copyright gcrtnst
  *
  * This file is part of SharpDivert.

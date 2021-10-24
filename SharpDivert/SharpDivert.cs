@@ -42,6 +42,8 @@ using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
+#pragma warning disable CS1591
+
 namespace SharpDivert
 {
     /// <summary>

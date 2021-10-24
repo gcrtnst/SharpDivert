@@ -13,7 +13,7 @@
 
     <Copyright>Copyright gcrtnst</Copyright>
 
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 
@@ -42,7 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\LICENSE">
+    <None Include="..\LICENSE.txt">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>

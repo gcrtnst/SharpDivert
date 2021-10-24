@@ -44,16 +44,37 @@ using System.Threading;
 
 namespace SharpDivert
 {
+    /// <summary>
+    /// Allows user-mode applications to capture/modify/drop network packets sent to/from the Windows network stack.
+    /// </summary>
     public class WinDivert : IDisposable
     {
         private readonly SafeWinDivertHandle handle;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WinDivert"/> class.
+        /// </summary>
+        /// <param name="filter">A packet filter string specified in the WinDivert filter language.</param>
+        /// <param name="layer">The layer.</param>
+        /// <param name="priority">The priority of the handle.</param>
+        /// <param name="flags">Additional flags.</param>
+        /// <exception cref="WinDivertInvalidFilterException">Thrown when the <paramref name="filter"/> is invalid.</exception>
+        /// <exception cref="Win32Exception">Thrown when a WinDivert handle fails to open.</exception>
         public WinDivert(string filter, Layer layer, short priority, Flag flags)
         {
             var fobj = CompileFilter(filter, layer);
             handle = Open(fobj.Span, layer, priority, flags);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WinDivert"/> class with a compiled filter object.
+        /// </summary>
+        /// <param name="filter">A filter object compiled by <see cref="CompileFilter"/>. Passing non-null-terminated data may cause out-of-bounds access.</param>
+        /// <param name="layer">The layer.</param>
+        /// <param name="priority">The priority of the handle.</param>
+        /// <param name="flags">Additional flags.</param>
+        /// <exception cref="ArgumentException">Thrown if the <paramref name="filter"/> is empty.</exception>
+        /// <exception cref="Win32Exception">Thrown when a WinDivert handle fails to open.</exception>
         public WinDivert(ReadOnlySpan<byte> filter, Layer layer, short priority, Flag flags) => handle = Open(filter, layer, priority, flags);
 
         private static unsafe SafeWinDivertHandle Open(ReadOnlySpan<byte> filter, Layer layer, short priority, Flag flags)
@@ -66,6 +87,13 @@ namespace SharpDivert
             return new SafeWinDivertHandle(hraw, true);
         }
 
+        /// <summary>
+        /// Receives captured packets/events matching the filter passed to the constructor.
+        /// </summary>
+        /// <param name="packet">An buffer for the captured packet. Can be empty if packets are not needed.</param>
+        /// <param name="abuf">An buffer for the address of the captured packet/event. Can be empty if addresses are not needed.</param>
+        /// <returns><c>recvLen</c> is the total number of bytes written to <paramref name="packet"/>. <c>addrLen</c> is the total number of addresses written to <paramref name="abuf"/>.</returns>
+        /// <exception cref="Win32Exception">Thrown when a packet fails to be received.</exception>
         public unsafe (uint recvLen, uint addrLen) RecvEx(Span<byte> packet, Span<WinDivertAddress> abuf)
         {
             var recvLen = (uint)0;
@@ -91,6 +119,13 @@ namespace SharpDivert
             return (recvLen, addrLen);
         }
 
+        /// <summary>
+        /// Injects packets into the network stack.
+        /// </summary>
+        /// <param name="packet">A buffer containing a packet to be injected.</param>
+        /// <param name="addr">The address of the injected packet.</param>
+        /// <returns>The total number of bytes injected.</returns>
+        /// <exception cref="Win32Exception">Throws when a packet fails to be injected.</exception>
         public unsafe uint SendEx(ReadOnlySpan<byte> packet, ReadOnlySpan<WinDivertAddress> addr)
         {
             using var href = new SafeHandleReference(handle, (IntPtr)(-1));
@@ -104,25 +139,50 @@ namespace SharpDivert
             return sendLen;
         }
 
+        /// <summary>
+        /// The maximum length of the packet queue for <see cref="RecvEx"/>.
+        /// </summary>
+        /// <remarks>
+        /// Setting an out-of-range value will cause a <see cref="Win32Exception"/>.
+        /// </remarks>
         public ulong QueueLength
         {
             get => GetParam(Param.QueueLength);
             set => SetParam(Param.QueueLength, value);
         }
 
+        /// <summary>
+        /// The minimum time, in milliseconds, a packet can be queued before it is automatically dropped.
+        /// </summary>
+        /// <remarks>
+        /// Setting an out-of-range value will cause a <see cref="Win32Exception"/>.
+        /// </remarks>
         public ulong QueueTime
         {
             get => GetParam(Param.QueueTime);
             set => SetParam(Param.QueueTime, value);
         }
 
+        /// <summary>
+        /// The maximum number of bytes that can be stored in the packet queue for <see cref="RecvEx"/>.
+        /// </summary>
+        /// <remarks>
+        /// Setting an out-of-range value will cause a <see cref="Win32Exception"/>.
+        /// </remarks>
         public ulong QueueSize
         {
             get => GetParam(Param.QueueSize);
             set => SetParam(Param.QueueSize, value);
         }
 
+        /// <summary>
+        /// The major version of the WinDivert driver.
+        /// </summary>
         public ulong VersionMajor => GetParam(Param.VersionMajor);
+
+        /// <summary>
+        /// The minor version of the WinDivert driver.
+        /// </summary>
         public ulong VersionMinor => GetParam(Param.VersionMinor);
 
         private ulong GetParam(Param param)
@@ -140,8 +200,22 @@ namespace SharpDivert
             if (!success) throw new Win32Exception();
         }
 
+        /// <summary>
+        /// Stop new packets being queued for <see cref="RecvEx"/>
+        /// </summary>
+        /// <exception cref="Win32Exception">Thrown when an error occurs.</exception>
         public void ShutdownRecv() => Shutdown(ShutdownHow.Recv);
+
+        /// <summary>
+        /// Stop new packets being injected via <see cref="SendEx"/>
+        /// </summary>
+        /// <exception cref="Win32Exception">Thrown when an error occurs.</exception>
         public void ShutdownSend() => Shutdown(ShutdownHow.Send);
+
+        /// <summary>
+        /// Causes all of a WinDivert handle to be shut down.
+        /// </summary>
+        /// <exception cref="Win32Exception">Thrown when an error occurs.</exception>
         public void Shutdown() => Shutdown(ShutdownHow.Both);
 
         private void Shutdown(ShutdownHow how)
@@ -151,10 +225,20 @@ namespace SharpDivert
             if (!success) throw new Win32Exception();
         }
 
+        /// <summary>
+        /// Closes a WinDivert handle.
+        /// </summary>
 #pragma warning disable CA1816
         public void Dispose() => handle.Dispose();
 #pragma warning restore CA1816
 
+        /// <summary>
+        /// (Re)calculates the checksum for any IPv4/ICMP/ICMPv6/TCP/UDP checksum present in the given packet.
+        /// </summary>
+        /// <param name="packet">The packet to be modified.</param>
+        /// <param name="addr">The address.</param>
+        /// <param name="flags">Additional flags.</param>
+        /// <exception cref="ArgumentException"></exception>
         public static unsafe void CalcChecksums(Span<byte> packet, ref WinDivertAddress addr, ChecksumFlag flags)
         {
             var success = false;
@@ -165,6 +249,13 @@ namespace SharpDivert
             if (!success) throw new ArgumentException(null);
         }
 
+        /// <summary>
+        /// Compiles the given packet filter string into a compact object representation.
+        /// </summary>
+        /// <param name="filter">The packet filter string to be checked.</param>
+        /// <param name="layer">The layer.</param>
+        /// <returns>The compiled filter object.</returns>
+        /// <exception cref="WinDivertInvalidFilterException">Thrown when the <paramref name="filter"/> is invalid.</exception>
         public static unsafe ReadOnlyMemory<byte> CompileFilter(string filter, Layer layer)
         {
             var buffer = (Span<byte>)stackalloc byte[256 * 24];
@@ -189,37 +280,131 @@ namespace SharpDivert
 
         public enum Layer
         {
+            /// <summary>
+            /// Network packets to/from the local machine.
+            /// </summary>
             Network = 0,
+
+            /// <summary>
+            /// Network packets passing through the local machine.
+            /// </summary>
             NetworkForward = 1,
+
+            /// <summary>
+            /// Network flow established/deleted events.
+            /// </summary>
             Flow = 2,
+
+            /// <summary>
+            /// Socket operation events.
+            /// </summary>
             Socket = 3,
+
+            /// <summary>
+            /// WinDivert handle events.
+            /// </summary>
             Reflect = 4,
         }
 
         public enum Event
         {
+            /// <summary>
+            /// A new network packet.
+            /// </summary>
             NetworkPacket = 0,
+
+            /// <summary>
+            /// A new flow is created.
+            /// </summary>
             FlowEstablished = 1,
+
+            /// <summary>
+            /// An old flow is deleted.
+            /// </summary>
             FlowDeleted = 2,
+
+            /// <summary>
+            /// A <c>bind()</c> operation.
+            /// </summary>
             SocketBind = 3,
+
+            /// <summary>
+            /// A <c>connect()</c> operation.
+            /// </summary>
             SocketConnect = 4,
+
+            /// <summary>
+            /// A <c> listen()</c> operation.
+            /// </summary>
             SocketListen = 5,
+
+            /// <summary>
+            /// An <c>accept()</c> operation.
+            /// </summary>
             SocketAccept = 6,
+
+            /// <summary>
+            /// A socket endpoint is closed.
+            /// </summary>
             SocketClose = 7,
+
+            /// <summary>
+            /// A new WinDivert handle was opened.
+            /// </summary>
             ReflectOpen = 8,
+
+            /// <summary>
+            /// An old WinDivert handle was closed.
+            /// </summary>
             ReflectClose = 9,
         }
 
         [Flags]
         public enum Flag : ulong
         {
+            /// <summary>
+            /// This flag opens the WinDivert handle in packet sniffing mode.
+            /// In packet sniffing mode the original packet is not dropped-and-diverted (the default) but copied-and-diverted.
+            /// </summary>
             Sniff = 0x0001,
+
+            /// <summary>
+            /// This flag indicates that the user application does not intend to read matching packets with <see cref="RecvEx"/>, instead the packets should be silently dropped.
+            /// </summary>
             Drop = 0x0002,
+
+            /// <summary>
+            /// This flags forces the handle into receive only mode which effectively disables <see cref="SendEx"/>.
+            /// This means that it is possible to block/capture packets or events but not inject them.
+            /// </summary>
             RecvOnly = 0x0004,
+
+            /// <summary>
+            /// An alias for <see cref="RecvOnly"/>.
+            /// </summary>
             ReadOnly = RecvOnly,
+
+            /// <summary>
+            /// This flags forces the handle into send only mode which effectively disables <see cref="RecvEx"/>.
+            /// This means that it is possible to inject packets or events, but not block/capture them.
+            /// </summary>
             SendOnly = 0x0008,
+
+            /// <summary>
+            /// An alias for <see cref="SendOnly"/>.
+            /// </summary>
             WriteOnly = SendOnly,
+
+            /// <summary>
+            /// This flags causes the constructor to fail with <c>ERROR_SERVICE_DOES_NOT_EXIST</c> if the WinDivert driver is not already installed.
+            /// </summary>
             NoInstall = 0x0010,
+
+            /// <summary>
+            /// If set, the handle will capture inbound IP fragments, but not inbound reassembled IP packets.
+            /// Otherwise, if not set (the default), the handle will capture inbound reassembled IP packets, but not inbound IP fragments.
+            /// This flag only affects inbound packets at the <see cref="Layer.Network"/> layer, else the flag is ignored.
+            /// </summary>
             Fragments = 0x0020,
         }
 
@@ -242,10 +427,29 @@ namespace SharpDivert
         [Flags]
         public enum ChecksumFlag : ulong
         {
+            /// <summary>
+            /// Do not calculate the IPv4 checksum.
+            /// </summary>
             NoIPv4Checksum = 1,
+
+            /// <summary>
+            /// Do not calculate the ICMP checksum.
+            /// </summary>
             NoICMPv4Checksum = 2,
+
+            /// <summary>
+            /// Do not calculate the ICMPv6 checksum.
+            /// </summary>
             NoICMPv6Checksum = 4,
+
+            /// <summary>
+            /// Do not calculate the TCP checksum.
+            /// </summary>
             NoTCPChecksum = 8,
+
+            /// <summary>
+            /// Do not calculate the UDP checksum.
+            /// </summary>
             NoUDPChecksum = 16,
         }
     }
@@ -256,14 +460,26 @@ namespace SharpDivert
         protected override bool ReleaseHandle() => NativeMethods.WinDivertClose(handle);
     }
 
+    /// <summary>
+    /// Retrieves a raw handle from a <see cref="SafeHandle"/>.
+    /// </summary>
     public struct SafeHandleReference : IDisposable
     {
+        /// <summary>
+        /// Handle taken from <see cref="SafeHandle"/>.
+        /// If the handle has already been closed, it will be set to an invalid handle value.
+        /// </summary>
         public IntPtr RawHandle { get; private set; }
 
         private readonly SafeHandle? handle;
         private readonly IntPtr invalid;
         private bool reference;
 
+        /// <summary>
+        /// Initializes an instance of <see cref="SafeHandleReference"/> class.
+        /// </summary>
+        /// <param name="handle">The target <see cref="SafeHandle"/>.</param>
+        /// <param name="invalid">Invalid value for handle. The value to be used instead of the actual handle if <paramref name="handle"/> is already closed.</param>
         public SafeHandleReference(SafeHandle? handle, IntPtr invalid)
         {
             RawHandle = invalid;
@@ -275,6 +491,10 @@ namespace SharpDivert
             RawHandle = handle.DangerousGetHandle();
         }
 
+        /// <summary>
+        /// Releases the underlying <see cref="SafeHandle"/>.
+        /// The user must call this function. Otherwise, the handle will leak.
+        /// </summary>
         public void Dispose()
         {
             RawHandle = invalid;
@@ -286,17 +506,43 @@ namespace SharpDivert
         }
     }
 
+    /// <summary>
+    /// It is the same as <see cref="WinDivertPacketParser"/> except for the indexes that are added to the result.
+    /// </summary>
     public struct WinDivertIndexedPacketParser : IEnumerable<(int, WinDivertParseResult)>
     {
         private readonly WinDivertPacketParser e;
 
+        /// <summary>
+        /// Initializes an instance of <see cref="WinDivertIndexedPacketParser"/> class with given packets.
+        /// </summary>
+        /// <param name="packet">Packets to be parsed.</param>
         public WinDivertIndexedPacketParser(Memory<byte> packet) => e = new WinDivertPacketParser(packet);
+
+        /// <summary>
+        /// Initializes an instance of the <see cref="WinDivertIndexedPacketParser"/> class that wraps the given <see cref="WinDivertPacketParser"/>.
+        /// </summary>
+        /// <param name="e"><see cref="WinDivertPacketParser"/> to be wrapped.</param>
         public WinDivertIndexedPacketParser(WinDivertPacketParser e) => this.e = e;
+
+        /// <summary>
+        /// Returns an enumerator that iterates over the results of packet parsing.
+        /// Since this function returns the struct as is, no boxing occurs and heap allocation can be avoided.
+        /// </summary>
+        /// <returns>An enumerator that iterates the result of packet parsing.</returns>
         public WinDivertIndexedPacketEnumerator GetEnumerator() => new(e.GetEnumerator());
+
         IEnumerator<(int, WinDivertParseResult)> IEnumerable<(int, WinDivertParseResult)>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
+    /// <summary>
+    /// It is the same as <see cref="WinDivertPacketEnumerator"/> except for the indexes that are added to the result.
+    /// </summary>
+    /// <remarks>
+    /// Since the given packet is pinned, it is safe to dereference the pointer in the parsed result during enumeration.
+    /// Do not use the pointer after the enumeration is finished.
+    /// </remarks>
     public struct WinDivertIndexedPacketEnumerator : IEnumerator<(int, WinDivertParseResult)>
     {
         private WinDivertPacketEnumerator e;
@@ -325,19 +571,44 @@ namespace SharpDivert
             i = -1;
         }
 
+        /// <summary>
+        /// Releases the underlying resources.
+        /// The user must call this function. Otherwise, the packet buffer will not be unpinned.
+        /// </summary>
         public void Dispose() => e.Dispose();
     }
 
+    /// <summary>
+    /// An enumerable that parses the given packet.
+    /// </summary>
     public struct WinDivertPacketParser : IEnumerable<WinDivertParseResult>
     {
         private readonly Memory<byte> packet;
 
+        /// <summary>
+        /// Initializes an instance of <see cref="WinDivertPacketParser"/> class.
+        /// </summary>
+        /// <param name="packet">Packets to be parsed.</param>
         public WinDivertPacketParser(Memory<byte> packet) => this.packet = packet;
+
+        /// <summary>
+        /// Returns an enumerator that iterates over the results of packet parsing.
+        /// Since this function returns the struct as is, no boxing occurs and heap allocation can be avoided.
+        /// </summary>
+        /// <returns>An enumerator that iterates the result of packet parsing.</returns>
         public WinDivertPacketEnumerator GetEnumerator() => new(packet);
+
         IEnumerator<WinDivertParseResult> IEnumerable<WinDivertParseResult>.GetEnumerator() => new WinDivertPacketEnumerator(packet);
         IEnumerator IEnumerable.GetEnumerator() => new WinDivertPacketEnumerator(packet);
     }
 
+    /// <summary>
+    /// An enumerator that parses the given packet.
+    /// </summary>
+    /// <remarks>
+    /// Since the given packet is pinned, it is safe to dereference the pointer in the parsed result during enumeration.
+    /// Do not use the pointer after the enumeration is finished.
+    /// </remarks>
     public unsafe struct WinDivertPacketEnumerator : IEnumerator<WinDivertParseResult>
     {
         private readonly MemoryHandle hmem;
@@ -403,27 +674,92 @@ namespace SharpDivert
             current = new WinDivertParseResult();
         }
 
+        /// <summary>
+        /// Releases the underlying resources.
+        /// The user must call this function. Otherwise, the packet buffer will not be unpinned.
+        /// </summary>
         public void Dispose() => hmem.Dispose();
     }
 
+    /// <summary>
+    /// The result of packet parsing.
+    /// </summary>
     public unsafe struct WinDivertParseResult
     {
+        /// <summary>
+        /// The entirety of the packet.
+        /// </summary>
         public Memory<byte> Packet;
+
+        /// <summary>
+        /// Points to the IPv4 header of the packet.
+        /// If the packet does not contain any IPv4 header, it will be null.
+        /// </summary>
         public WinDivertIPv4Hdr* IPv4Hdr;
+
+        /// <summary>
+        /// Points to the IPv6 header of the packet.
+        /// If the packet does not contain any IPv6 header, it will be null.
+        /// </summary>
         public WinDivertIPv6Hdr* IPv6Hdr;
+
+        /// <summary>
+        /// Transport protocol.
+        /// </summary>
         public byte Protocol;
+
+        /// <summary>
+        /// Points to the ICMPv4 header of the packet.
+        /// If the packet does not contain any ICMPv4 header, it will be null.
+        /// </summary>
         public WinDivertICMPv4Hdr* ICMPv4Hdr;
+
+        /// <summary>
+        /// Points to the ICMPv6 header of the packet.
+        /// If the packet does not contain any ICMPv6 header, it will be null.
+        /// </summary>
         public WinDivertICMPv6Hdr* ICMPv6Hdr;
+
+        /// <summary>
+        /// Points to the TCP header of the packet.
+        /// If the packet does not contain any TCP header, it will be null.
+        /// </summary>
         public WinDivertTCPHdr* TCPHdr;
+
+        /// <summary>
+        /// Points to the UDP header of the packet.
+        /// If the packet does not contain any UDP header, it will be null.
+        /// </summary>
         public WinDivertUDPHdr* UDPHdr;
+
+        /// <summary>
+        /// The packet's data/payload.
+        /// If the packet does not contain any data/payload, it will be empty.
+        /// </summary>
         public Memory<byte> Data;
     }
 
+    /// <summary>
+    /// An exception thrown when a packet filter string is invalid.
+    /// </summary>
     public class WinDivertInvalidFilterException : ArgumentException
     {
+        /// <summary>
+        /// The error description.
+        /// </summary>
         public string FilterErrorStr;
+
+        /// <summary>
+        /// The error position.
+        /// </summary>
         public uint FilterErrorPos;
 
+        /// <summary>
+        /// Initializes an new instance of <see cref="WinDivertInvalidFilterException"/> class.
+        /// </summary>
+        /// <param name="errorStr">The error description.</param>
+        /// <param name="errorPos">The error position.</param>
+        /// <param name="paramName">The name of the parameter that caused the current exception.</param>
         public WinDivertInvalidFilterException(string errorStr, uint errorPos, string? paramName) : base(errorStr, paramName)
         {
             FilterErrorStr = errorStr;
@@ -431,11 +767,20 @@ namespace SharpDivert
         }
     }
 
+    /// <summary>
+    /// IPv4 address in host byte-order.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct IPv4Addr : IEquatable<IPv4Addr>
     {
         internal uint Raw;
 
+        /// <summary>
+        /// Parses an IPv4 address stored in <paramref name="addrStr"/>.
+        /// </summary>
+        /// <param name="addrStr">The address string.</param>
+        /// <returns>Output address.</returns>
+        /// <exception cref="Win32Exception">Thrown if the parse fails.</exception>
         public static unsafe IPv4Addr Parse(string addrStr)
         {
             var addr = new IPv4Addr();
@@ -444,6 +789,11 @@ namespace SharpDivert
             return addr;
         }
 
+        /// <summary>
+        /// Convert an IPv4 address into a string.
+        /// </summary>
+        /// <returns>The formatted string.</returns>
+        /// <exception cref="Win32Exception">Thrown if formatting fails.</exception>
         public override unsafe string ToString()
         {
             var buffer = (Span<byte>)stackalloc byte[32];
@@ -469,11 +819,19 @@ namespace SharpDivert
         public override int GetHashCode() => base.GetHashCode();
     }
 
+    /// <summary>
+    /// IPv4 address in network byte-order.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct NetworkIPv4Addr : IEquatable<NetworkIPv4Addr>
     {
         internal uint Raw;
 
+        /// <summary>
+        /// Convert an IPv4 address into a string.
+        /// </summary>
+        /// <returns>The formatted string.</returns>
+        /// <exception cref="Win32Exception">Thrown if formatting fails.</exception>
         public override string ToString() => ((IPv4Addr)this).ToString();
 
         public static bool operator ==(NetworkIPv4Addr left, NetworkIPv4Addr right) => left.Equals(right);
@@ -500,11 +858,20 @@ namespace SharpDivert
         public override int GetHashCode() => base.GetHashCode();
     }
 
+    /// <summary>
+    /// IPv6 address in host byte-order.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct IPv6Addr : IEquatable<IPv6Addr>
     {
         internal fixed uint Raw[4];
 
+        /// <summary>
+        /// Parses an IPv6 address stored in <paramref name="addrStr"/>.
+        /// </summary>
+        /// <param name="addrStr">The address string.</param>
+        /// <returns>Output address.</returns>
+        /// <exception cref="Win32Exception">Thrown if the parse fails.</exception>
         public static IPv6Addr Parse(string addrStr)
         {
             var addr = new IPv6Addr();
@@ -513,6 +880,11 @@ namespace SharpDivert
             return addr;
         }
 
+        /// <summary>
+        /// Convert an IPv6 address into a string.
+        /// </summary>
+        /// <returns>The formatted string.</returns>
+        /// <exception cref="Win32Exception">Thrown if formatting fails.</exception>
         public override string ToString()
         {
             var buffer = (Span<byte>)stackalloc byte[64];
@@ -547,11 +919,19 @@ namespace SharpDivert
         public override int GetHashCode() => base.GetHashCode();
     }
 
+    /// <summary>
+    /// IPv6 address in network byte-order.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct NetworkIPv6Addr : IEquatable<NetworkIPv6Addr>
     {
         internal fixed uint Raw[4];
 
+        /// <summary>
+        /// Convert an IPv6 address into a string.
+        /// </summary>
+        /// <returns>The formatted string.</returns>
+        /// <exception cref="Win32Exception">Thrown if formatting fails.</exception>
         public override string ToString() => ((IPv6Addr)this).ToString();
 
         public static bool operator ==(NetworkIPv6Addr left, NetworkIPv6Addr right) => left.Equals(right);
@@ -588,6 +968,9 @@ namespace SharpDivert
         public override int GetHashCode() => base.GetHashCode();
     }
 
+    /// <summary>
+    /// <see cref="ushort"/> in network byte-order.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct NetworkUInt16 : IEquatable<NetworkUInt16>
     {
@@ -610,6 +993,9 @@ namespace SharpDivert
         public override string ToString() => ((ushort)this).ToString();
     }
 
+    /// <summary>
+    /// <see cref="uint"/> in network byte-order.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct NetworkUInt32 : IEquatable<NetworkUInt32>
     {
@@ -698,71 +1084,142 @@ namespace SharpDivert
     [StructLayout(LayoutKind.Explicit)]
     public unsafe struct WinDivertAddress
     {
-        [FieldOffset(0)] public long Timestamp;
+        /// <summary>
+        /// A timestamp indicating when event occurred.
+        /// </summary>
+        [FieldOffset(0)]
+        public long Timestamp;
+
         [FieldOffset(8)] private byte byteLayer;
         [FieldOffset(9)] private byte byteEvent;
         [FieldOffset(10)] private byte flags;
 
-        [FieldOffset(16)] public WinDivertDataNetwork Network;
-        [FieldOffset(16)] public WinDivertDataFlow Flow;
-        [FieldOffset(16)] public WinDivertDataSocket Socket;
-        [FieldOffset(16)] public WinDivertDataReflect Reflect;
+        /// <summary>
+        /// Data specific to the network layer.
+        /// </summary>
+        /// <remarks>
+        /// If the <see cref="Layer"/> is not <see cref="WinDivert.Layer.Network"/>, do not access this field.
+        /// This field is in a <c>union</c> and shares memory space with other fields.
+        /// </remarks>
+        [FieldOffset(16)]
+        public WinDivertDataNetwork Network;
+
+        /// <summary>
+        /// Data specific to the flow layer.
+        /// </summary>
+        /// <remarks>
+        /// If the <see cref="Layer"/> is not <see cref="WinDivert.Layer.Flow"/>, do not access this field.
+        /// This field is in a <c>union</c> and shares memory space with other fields.
+        /// </remarks>
+        [FieldOffset(16)]
+        public WinDivertDataFlow Flow;
+
+        /// <summary>
+        /// Data specific to the socket layer.
+        /// </summary>
+        /// <remarks>
+        /// If the <see cref="Layer"/> is not <see cref="WinDivert.Layer.Socket"/>, do not access this field.
+        /// This field is in a <c>union</c> and shares memory space with other fields.
+        /// </remarks>
+        [FieldOffset(16)]
+        public WinDivertDataSocket Socket;
+
+        /// <summary>
+        /// Data specific to the reflect layer.
+        /// </summary>
+        /// <remarks>
+        /// If the <see cref="Layer"/> is not <see cref="WinDivert.Layer.Reflect"/>, do not access this field.
+        /// This field is in a <c>union</c> and shares memory space with other fields.
+        /// </remarks>
+        [FieldOffset(16)]
+        public WinDivertDataReflect Reflect;
+
         [FieldOffset(16)] private fixed byte reserved[64];
 
+        /// <summary>
+        /// The handle's layer.
+        /// </summary>
         public WinDivert.Layer Layer
         {
             get => (WinDivert.Layer)byteLayer;
             set => byteLayer = (byte)value;
         }
 
+        /// <summary>
+        /// The captured event.
+        /// </summary>
         public WinDivert.Event Event
         {
             get => (WinDivert.Event)byteEvent;
             set => byteEvent = (byte)value;
         }
 
+        /// <summary>
+        /// Set to <c>true</c> if the event was sniffed (i.e., not blocked), <c>false</c> otherwise.
+        /// </summary>
         public bool Sniffed
         {
             get => GetFlag(1 << 0);
             set => SetFlag(1 << 0, value);
         }
 
+        /// <summary>
+        /// Set to <c>true</c> for outbound packets/event, <c>false</c> for inbound or otherwise.
+        /// </summary>
         public bool Outbound
         {
             get => GetFlag(1 << 1);
             set => SetFlag(1 << 1, value);
         }
 
+        /// <summary>
+        /// Set to <c>true</c> for loopback packets, <c>false</c> otherwise.
+        /// </summary>
         public bool Loopback
         {
             get => GetFlag(1 << 2);
             set => SetFlag(1 << 2, value);
         }
 
+        /// <summary>
+        /// Set to <c>true</c> for impostor packets, <c>false</c> otherwise.
+        /// </summary>
         public bool Impostor
         {
             get => GetFlag(1 << 3);
             set => SetFlag(1 << 3, value);
         }
 
+        /// <summary>
+        /// Set to <c>true</c> for IPv6 packets/events, <c>false</c> otherwise.
+        /// </summary>
         public bool IPv6
         {
             get => GetFlag(1 << 4);
             set => SetFlag(1 << 4, value);
         }
 
+        /// <summary>
+        /// Set to <c>true</c> if the IPv4 checksum is valid, <c>false</c> otherwise.
+        /// </summary>
         public bool IPChecksum
         {
             get => GetFlag(1 << 5);
             set => SetFlag(1 << 5, value);
         }
 
+        /// <summary>
+        /// Set to <c>true</c> if the TCP checksum is valid, <c>false</c> otherwise.
+        /// </summary>
         public bool TCPChecksum
         {
             get => GetFlag(1 << 6);
             set => SetFlag(1 << 6, value);
         }
 
+        /// <summary>
+        /// Set to <c>true</c> if the UDP checksum is valid, <c>false</c> otherwise.
+        /// </summary>
         public bool UDPChecksum
         {
             get => GetFlag(1 << 7);
@@ -781,46 +1238,137 @@ namespace SharpDivert
     [StructLayout(LayoutKind.Sequential)]
     public struct WinDivertDataNetwork
     {
+        /// <summary>
+        /// The interface index on which the packet arrived (for inbound packets), or is to be sent (for outbound packets).
+        /// </summary>
         public uint IfIdx;
+
+        /// <summary>
+        /// The sub-interface index for <see cref="IfIdx"/>.
+        /// </summary>
         public uint SubIfIdx;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct WinDivertDataFlow
     {
+        /// <summary>
+        /// The endpoint ID of the flow.
+        /// </summary>
         public ulong EndpointId;
+
+        /// <summary>
+        /// The parent endpoint ID of the flow.
+        /// </summary>
         public ulong ParentEndpointId;
+
+        /// <summary>
+        /// The ID of the process associated with the flow.
+        /// </summary>
         public uint ProcessId;
+
+        /// <summary>
+        /// The local address associated with the flow.
+        /// </summary>
         public IPv6Addr LocalAddr;
+
+        /// <summary>
+        /// The remote address associated with the flow.
+        /// </summary>
         public IPv6Addr RemoteAddr;
+
+        /// <summary>
+        /// The local port associated with the flow.
+        /// </summary>
         public ushort LocalPort;
+
+        /// <summary>
+        /// The remote port associated with the flow.
+        /// </summary>
         public ushort RemotePort;
+
+        /// <summary>
+        /// The protocol associated with the flow.
+        /// </summary>
         public byte Protocol;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct WinDivertDataSocket
     {
+        /// <summary>
+        /// The endpoint ID of the socket operation.
+        /// </summary>
         public ulong EndpointId;
+
+        /// <summary>
+        /// The parent endpoint ID of the socket operation.
+        /// </summary>
         public ulong ParentEndpointId;
+
+        /// <summary>
+        /// The ID of the process associated with the socket operation.
+        /// </summary>
         public uint ProcessId;
+
+        /// <summary>
+        /// The local address associated with the socket operation.
+        /// </summary>
         public IPv6Addr LocalAddr;
+
+        /// <summary>
+        /// The remote address associated with the socket operation.
+        /// </summary>
         public IPv6Addr RemoteAddr;
+
+        /// <summary>
+        /// The local port associated with the socket operation.
+        /// </summary>
         public ushort LocalPort;
+
+        /// <summary>
+        /// The remote port associated with the socket operation.
+        /// </summary>
         public ushort RemotePort;
+
+        /// <summary>
+        /// The protocol associated with the socket operation.
+        /// </summary>
         public byte Protocol;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct WinDivertDataReflect
     {
+        /// <summary>
+        /// A timestamp indicating when the handle was opened.
+        /// </summary>
         public long Timestamp;
+
+        /// <summary>
+        /// The ID of the process that opened the handle.
+        /// </summary>
         public uint ProcessId;
+
+        /// <summary>
+        /// The <c>layer</c> parameter passed to <c>WinDivertOpen()</c> for the opened handle.
+        /// </summary>
         public WinDivert.Layer Layer;
+
+        /// <summary>
+        /// The <c>flags</c> parameter passed to <c>WinDivertOpen()</c> for the opened handle.
+        /// </summary>
         public ulong Flags;
+
+        /// <summary>
+        /// The <c>priority</c> parameter passed to <c>WinDivertOpen()</c> for the opened handle.
+        /// </summary>
         public short Priority;
     }
 
+    /// <summary>
+    /// IPv4 header definition.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct WinDivertIPv4Hdr
     {
@@ -836,6 +1384,9 @@ namespace SharpDivert
         public NetworkIPv4Addr DstAddr;
     }
 
+    /// <summary>
+    /// IPv6 header definition.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct WinDivertIPv6Hdr
     {
@@ -847,6 +1398,9 @@ namespace SharpDivert
         public NetworkIPv6Addr DstAddr;
     }
 
+    /// <summary>
+    /// ICMP header definition.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct WinDivertICMPv4Hdr
     {
@@ -856,6 +1410,9 @@ namespace SharpDivert
         public uint Body;
     }
 
+    /// <summary>
+    /// ICMPv6 header definition.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct WinDivertICMPv6Hdr
     {
@@ -865,6 +1422,9 @@ namespace SharpDivert
         public uint Body;
     }
 
+    /// <summary>
+    /// TCP header definition.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct WinDivertTCPHdr
     {
@@ -878,6 +1438,9 @@ namespace SharpDivert
         public NetworkUInt16 UrgPtr;
     }
 
+    /// <summary>
+    /// UDP header definition.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct WinDivertUDPHdr
     {

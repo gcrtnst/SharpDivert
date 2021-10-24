@@ -9,6 +9,10 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Version>0.0.0</Version>
+    <PackageProjectUrl>https://github.com/gcrtnst/SharpDivert</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/gcrtnst/SharpDivert</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

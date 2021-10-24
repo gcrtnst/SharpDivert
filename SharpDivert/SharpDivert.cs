@@ -32,7 +32,6 @@
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Buffers;
 using System.Collections;
@@ -41,6 +40,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace SharpDivert
 {

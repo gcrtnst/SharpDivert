@@ -454,7 +454,7 @@ namespace SharpDivert
         }
     }
 
-    public class SafeWinDivertHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal class SafeWinDivertHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal SafeWinDivertHandle(IntPtr existingHandle, bool ownsHandle) : base(ownsHandle) => SetHandle(existingHandle);
         protected override bool ReleaseHandle() => NativeMethods.WinDivertClose(handle);

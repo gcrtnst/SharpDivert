@@ -44,3 +44,10 @@ Note that WinDivert must be run with administrative privileges. `requestedExecut
 
 ## Security Warning
 Be careful not to execute any malicious code, as applications containing WinDivert are run with administrative privileges. Program files, such as WinDivert.dll, should not be rewritten without administrative privileges. Make sure that the DLL search path is set properly to avoid loading invalid WinDivert.dll.
+
+## Remarks
+SharpDivert is only used in a limited number of applications and has not been fully tested. Some features are missing. Issues and pull requests are welcome.
+
+## License
+SharpDivert is dual-licensed under your choice of the GNU Lesser General Public License (LGPL) Version 3 or the GNU General Public License (GPL) Version 2. See the LICENSE file for more information.
+

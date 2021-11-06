@@ -224,9 +224,9 @@ namespace SharpDivertTests
         }
 
         [TestMethod]
-        [DataRow(nameof(WinDivert.QueueLength), (ulong)4096)]
-        [DataRow(nameof(WinDivert.QueueTime), (ulong)2000)]
-        [DataRow(nameof(WinDivert.QueueSize), (ulong)4194304)]
+        [DataRow(nameof(WinDivert.QueueLength), WinDivert.QueueLengthDefault)]
+        [DataRow(nameof(WinDivert.QueueTime), WinDivert.QueueTimeDefault)]
+        [DataRow(nameof(WinDivert.QueueSize), WinDivert.QueueSizeDefault)]
         [DataRow(nameof(WinDivert.VersionMajor), (ulong)2)]
         [DataRow(nameof(WinDivert.VersionMinor), (ulong)2)]
         public void Param_Get(string name, ulong expected)
@@ -238,12 +238,15 @@ namespace SharpDivertTests
         }
 
         [TestMethod]
-        [DataRow(nameof(WinDivert.QueueLength), (ulong)32)]
-        [DataRow(nameof(WinDivert.QueueLength), (ulong)16384)]
-        [DataRow(nameof(WinDivert.QueueTime), (ulong)100)]
-        [DataRow(nameof(WinDivert.QueueTime), (ulong)16000)]
-        [DataRow(nameof(WinDivert.QueueSize), (ulong)65535)]
-        [DataRow(nameof(WinDivert.QueueSize), (ulong)33554432)]
+        [DataRow(nameof(WinDivert.QueueLength), WinDivert.QueueLengthMin)]
+        [DataRow(nameof(WinDivert.QueueLength), WinDivert.QueueLengthDefault + 1)]
+        [DataRow(nameof(WinDivert.QueueLength), WinDivert.QueueLengthMax)]
+        [DataRow(nameof(WinDivert.QueueTime), WinDivert.QueueTimeMin)]
+        [DataRow(nameof(WinDivert.QueueTime), WinDivert.QueueTimeDefault + 1)]
+        [DataRow(nameof(WinDivert.QueueTime), WinDivert.QueueTimeMax)]
+        [DataRow(nameof(WinDivert.QueueSize), WinDivert.QueueSizeMin)]
+        [DataRow(nameof(WinDivert.QueueSize), WinDivert.QueueSizeDefault + 1)]
+        [DataRow(nameof(WinDivert.QueueSize), WinDivert.QueueSizeMax)]
         public void Param_SetValidValue(string name, ulong input)
         {
             using var divert = new WinDivert("false", WinDivert.Layer.Network, 0, WinDivert.Flag.Sniff | WinDivert.Flag.RecvOnly);
@@ -258,9 +261,12 @@ namespace SharpDivertTests
         }
 
         [TestMethod]
-        [DataRow(nameof(WinDivert.QueueLength), (ulong)0)]
-        [DataRow(nameof(WinDivert.QueueTime), (ulong)0)]
-        [DataRow(nameof(WinDivert.QueueSize), (ulong)0)]
+        [DataRow(nameof(WinDivert.QueueLength), WinDivert.QueueLengthMin - 1)]
+        [DataRow(nameof(WinDivert.QueueLength), WinDivert.QueueLengthMax + 1)]
+        [DataRow(nameof(WinDivert.QueueTime), WinDivert.QueueTimeMin - 1)]
+        [DataRow(nameof(WinDivert.QueueTime), WinDivert.QueueTimeMax + 1)]
+        [DataRow(nameof(WinDivert.QueueSize), WinDivert.QueueSizeMin - 1)]
+        [DataRow(nameof(WinDivert.QueueSize), WinDivert.QueueSizeMax + 1)]
         public void Param_SetInvalidValue(string name, ulong input)
         {
             using var divert = new WinDivert("false", WinDivert.Layer.Network, 0, WinDivert.Flag.Sniff | WinDivert.Flag.RecvOnly);

@@ -141,6 +141,10 @@ namespace SharpDivert
             return sendLen;
         }
 
+        public const ulong QueueLengthDefault = 4096;
+        public const ulong QueueLengthMin = 32;
+        public const ulong QueueLengthMax = 16384;
+
         /// <summary>
         /// The maximum length of the packet queue for <see cref="RecvEx"/>.
         /// </summary>
@@ -153,6 +157,10 @@ namespace SharpDivert
             set => SetParam(Param.QueueLength, value);
         }
 
+        public const ulong QueueTimeDefault = 2000;
+        public const ulong QueueTimeMin = 100;
+        public const ulong QueueTimeMax = 16000;
+
         /// <summary>
         /// The minimum time, in milliseconds, a packet can be queued before it is automatically dropped.
         /// </summary>
@@ -164,6 +172,10 @@ namespace SharpDivert
             get => GetParam(Param.QueueTime);
             set => SetParam(Param.QueueTime, value);
         }
+
+        public const ulong QueueSizeDefault = 4194304;
+        public const ulong QueueSizeMin = 65535;
+        public const ulong QueueSizeMax = 33554432;
 
         /// <summary>
         /// The maximum number of bytes that can be stored in the packet queue for <see cref="RecvEx"/>.

@@ -81,7 +81,7 @@ namespace SharpDivert
 
         private static unsafe SafeWinDivertHandle Open(ReadOnlySpan<byte> filter, Layer layer, short priority, Flag flags)
         {
-            if (filter.IsEmpty) throw new ArgumentException(null, nameof(filter));
+            if (filter.IsEmpty) throw new ArgumentException($"{nameof(filter)} is empty.", nameof(filter));
 
             var hraw = (IntPtr)(-1);
             fixed (byte* pFilter = filter) hraw = NativeMethods.WinDivertOpen(pFilter, layer, priority, flags);
@@ -260,7 +260,7 @@ namespace SharpDivert
             {
                 success = NativeMethods.WinDivertHelperCalcChecksums(pPacket, (uint)packet.Length, pAddr, flags);
             }
-            if (!success) throw new ArgumentException(null);
+            if (!success) throw new ArgumentException("An error occurred while calculating the checksum of the packet.");
         }
 
         /// <summary>

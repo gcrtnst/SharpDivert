@@ -61,7 +61,7 @@ namespace SharpDivert
         /// <param name="priority">The priority of the handle.</param>
         /// <param name="flags">Additional flags.</param>
         /// <exception cref="WinDivertInvalidFilterException">Thrown when the <paramref name="filter"/> is invalid.</exception>
-        /// <exception cref="Win32Exception">Thrown when a WinDivert handle fails to open.</exception>
+        /// <exception cref="WinDivertException">Thrown when a WinDivert handle fails to open.</exception>
         public WinDivert(string filter, Layer layer, short priority, Flag flags)
         {
             var fobj = CompileFilter(filter, layer);
@@ -76,7 +76,7 @@ namespace SharpDivert
         /// <param name="priority">The priority of the handle.</param>
         /// <param name="flags">Additional flags.</param>
         /// <exception cref="ArgumentException">Thrown if the <paramref name="filter"/> is empty.</exception>
-        /// <exception cref="Win32Exception">Thrown when a WinDivert handle fails to open.</exception>
+        /// <exception cref="WinDivertException">Thrown when a WinDivert handle fails to open.</exception>
         public WinDivert(ReadOnlySpan<byte> filter, Layer layer, short priority, Flag flags) => handle = Open(filter, layer, priority, flags);
 
         private static unsafe SafeWinDivertHandle Open(ReadOnlySpan<byte> filter, Layer layer, short priority, Flag flags)
@@ -85,7 +85,7 @@ namespace SharpDivert
 
             var hraw = (IntPtr)(-1);
             fixed (byte* pFilter = filter) hraw = NativeMethods.WinDivertOpen(pFilter, layer, priority, flags);
-            if (hraw == (IntPtr)(-1)) throw new Win32Exception();
+            if (hraw == (IntPtr)(-1)) throw new WinDivertException(ControlCode.Open);
             return new SafeWinDivertHandle(hraw, true);
         }
 
@@ -95,7 +95,7 @@ namespace SharpDivert
         /// <param name="packet">An buffer for the captured packet. Can be empty if packets are not needed.</param>
         /// <param name="abuf">An buffer for the address of the captured packet/event. Can be empty if addresses are not needed.</param>
         /// <returns><c>recvLen</c> is the total number of bytes written to <paramref name="packet"/>. <c>addrLen</c> is the total number of addresses written to <paramref name="abuf"/>.</returns>
-        /// <exception cref="Win32Exception">Thrown when a packet fails to be received.</exception>
+        /// <exception cref="WinDivertException">Thrown when a packet fails to be received.</exception>
         public unsafe (uint recvLen, uint addrLen) RecvEx(Span<byte> packet, Span<WinDivertAddress> abuf)
         {
             var recvLen = (uint)0;
@@ -114,7 +114,7 @@ namespace SharpDivert
                 {
                     success = NativeMethods.WinDivertRecvEx(href.RawHandle, pPacket, (uint)packet.Length, &recvLen, 0, pAbuf, pAddrLen, null);
                 }
-                if (!success) throw new Win32Exception();
+                if (!success) throw new WinDivertException(ControlCode.Recv);
             }
 
             addrLen /= (uint)sizeof(WinDivertAddress);
@@ -127,7 +127,7 @@ namespace SharpDivert
         /// <param name="packet">A buffer containing a packet to be injected.</param>
         /// <param name="addr">The address of the injected packet.</param>
         /// <returns>The total number of bytes injected.</returns>
-        /// <exception cref="Win32Exception">Throws when a packet fails to be injected.</exception>
+        /// <exception cref="WinDivertException">Throws when a packet fails to be injected.</exception>
         public unsafe uint SendEx(ReadOnlySpan<byte> packet, ReadOnlySpan<WinDivertAddress> addr)
         {
             using var href = new SafeHandleReference(handle, (IntPtr)(-1));
@@ -137,7 +137,7 @@ namespace SharpDivert
             {
                 success = NativeMethods.WinDivertSendEx(href.RawHandle, pPacket, (uint)packet.Length, &sendLen, 0, pAddr, (uint)(addr.Length * sizeof(WinDivertAddress)), null);
             }
-            if (!success) throw new Win32Exception();
+            if (!success) throw new WinDivertException(ControlCode.Send);
             return sendLen;
         }
 
@@ -149,7 +149,7 @@ namespace SharpDivert
         /// The maximum length of the packet queue for <see cref="RecvEx"/>.
         /// </summary>
         /// <remarks>
-        /// Setting an out-of-range value will cause a <see cref="Win32Exception"/>.
+        /// Setting an out-of-range value will cause a <see cref="WinDivertException"/>.
         /// </remarks>
         public ulong QueueLength
         {
@@ -165,7 +165,7 @@ namespace SharpDivert
         /// The minimum time, in milliseconds, a packet can be queued before it is automatically dropped.
         /// </summary>
         /// <remarks>
-        /// Setting an out-of-range value will cause a <see cref="Win32Exception"/>.
+        /// Setting an out-of-range value will cause a <see cref="WinDivertException"/>.
         /// </remarks>
         public ulong QueueTime
         {
@@ -181,7 +181,7 @@ namespace SharpDivert
         /// The maximum number of bytes that can be stored in the packet queue for <see cref="RecvEx"/>.
         /// </summary>
         /// <remarks>
-        /// Setting an out-of-range value will cause a <see cref="Win32Exception"/>.
+        /// Setting an out-of-range value will cause a <see cref="WinDivertException"/>.
         /// </remarks>
         public ulong QueueSize
         {
@@ -203,7 +203,7 @@ namespace SharpDivert
         {
             using var href = new SafeHandleReference(handle, (IntPtr)(-1));
             var success = NativeMethods.WinDivertGetParam(href.RawHandle, param, out var value);
-            if (!success) throw new Win32Exception();
+            if (!success) throw new WinDivertException(ControlCode.GetParam);
             return value;
         }
 
@@ -211,32 +211,32 @@ namespace SharpDivert
         {
             using var href = new SafeHandleReference(handle, (IntPtr)(-1));
             var success = NativeMethods.WinDivertSetParam(href.RawHandle, param, value);
-            if (!success) throw new Win32Exception();
+            if (!success) throw new WinDivertException(ControlCode.SetParam);
         }
 
         /// <summary>
         /// Stop new packets being queued for <see cref="RecvEx"/>
         /// </summary>
-        /// <exception cref="Win32Exception">Thrown when an error occurs.</exception>
+        /// <exception cref="WinDivertException">Thrown when an error occurs.</exception>
         public void ShutdownRecv() => Shutdown(ShutdownHow.Recv);
 
         /// <summary>
         /// Stop new packets being injected via <see cref="SendEx"/>
         /// </summary>
-        /// <exception cref="Win32Exception">Thrown when an error occurs.</exception>
+        /// <exception cref="WinDivertException">Thrown when an error occurs.</exception>
         public void ShutdownSend() => Shutdown(ShutdownHow.Send);
 
         /// <summary>
         /// Causes all of a WinDivert handle to be shut down.
         /// </summary>
-        /// <exception cref="Win32Exception">Thrown when an error occurs.</exception>
+        /// <exception cref="WinDivertException">Thrown when an error occurs.</exception>
         public void Shutdown() => Shutdown(ShutdownHow.Both);
 
         private void Shutdown(ShutdownHow how)
         {
             using var href = new SafeHandleReference(handle, (IntPtr)(-1));
             var success = NativeMethods.WinDivertShutdown(href.RawHandle, how);
-            if (!success) throw new Win32Exception();
+            if (!success) throw new WinDivertException(ControlCode.Shutdown);
         }
 
         /// <summary>
@@ -466,6 +466,42 @@ namespace SharpDivert
             /// </summary>
             NoUDPChecksum = 16,
         }
+
+        /// <summary>
+        /// The code for the operation, mainly used in <see cref="WinDivertException"/>.
+        /// </summary>
+        public enum ControlCode
+        {
+            /// <summary>
+            /// Code corresponding to <c>WinDivertOpen</c>.
+            /// </summary>
+            Open,
+
+            /// <summary>
+            /// Code corresponding to <c>WinDivertRecvEx</c>.
+            /// </summary>
+            Recv,
+
+            /// <summary>
+            /// Code corresponding to <c>WinDivertSendEx</c>.
+            /// </summary>
+            Send,
+
+            /// <summary>
+            /// Code corresponding to <c>WinDivertGetParam</c>.
+            /// </summary>
+            GetParam,
+
+            /// <summary>
+            /// Code corresponding to <c>WinDivertSetParam</c>.
+            /// </summary>
+            SetParam,
+
+            /// <summary>
+            /// Code corresponding to <c>WinDivertShutdown</c>.
+            /// </summary>
+            Shutdown,
+        }
     }
 
     internal class SafeWinDivertHandle : SafeHandleZeroOrMinusOneIsInvalid
@@ -518,6 +554,19 @@ namespace SharpDivert
                 reference = false;
             }
         }
+    }
+
+    /// <summary>
+    /// Throws exceptions raised by operations on WinDivert handle.
+    /// </summary>
+    public class WinDivertException : Win32Exception
+    {
+        /// <summary>
+        /// Get the code of the operation that caused this error.
+        /// </summary>
+        public WinDivert.ControlCode ControlCode { get; }
+
+        internal WinDivertException(WinDivert.ControlCode controlCode) : base() => ControlCode = controlCode;
     }
 
     /// <summary>

@@ -73,7 +73,8 @@ namespace SharpDivertTests
         public void Ctor_InvalidArguments(string filter, WinDivert.Layer layer, short priority, WinDivert.Flag flag)
         {
             var fobj = WinDivert.CompileFilter(filter, layer);
-            var e = Assert.ThrowsException<Win32Exception>(() => new WinDivert(fobj.Span, layer, priority, flag));
+            var e = Assert.ThrowsException<WinDivertException>(() => new WinDivert(fobj.Span, layer, priority, flag));
+            Assert.AreEqual(WinDivert.ControlCode.Open, e.ControlCode);
             Assert.AreEqual(87, e.NativeErrorCode);
         }
 
@@ -139,7 +140,8 @@ namespace SharpDivertTests
 
             using var divert = new WinDivert($"udp.SrcPort == {Port1} and udp.DstPort == {Port2} and loopback", WinDivert.Layer.Network, 0, WinDivert.Flag.Sniff | WinDivert.Flag.RecvOnly);
             _ = sender.Send(new byte[1], 1);
-            var e = Assert.ThrowsException<Win32Exception>(() => divert.RecvEx(packet.Span, abuf.Span));
+            var e = Assert.ThrowsException<WinDivertException>(() => divert.RecvEx(packet.Span, abuf.Span));
+            Assert.AreEqual(WinDivert.ControlCode.Recv, e.ControlCode);
             Assert.AreEqual(122, e.NativeErrorCode);
         }
 
@@ -166,7 +168,8 @@ namespace SharpDivertTests
 
             using var divert = new WinDivert("false", WinDivert.Layer.Network, 0, WinDivert.Flag.Sniff | WinDivert.Flag.RecvOnly);
             divert.Shutdown();
-            var e = Assert.ThrowsException<Win32Exception>(() => divert.RecvEx(packet.Span, abuf.Span));
+            var e = Assert.ThrowsException<WinDivertException>(() => divert.RecvEx(packet.Span, abuf.Span));
+            Assert.AreEqual(WinDivert.ControlCode.Recv, e.ControlCode);
             Assert.AreEqual(232, e.NativeErrorCode);
         }
 
@@ -219,7 +222,8 @@ namespace SharpDivertTests
                 addr.Span[i].Impostor = true;
             }
 
-            var e = Assert.ThrowsException<Win32Exception>(() => divert.SendEx(recv.Span, addr.Span));
+            var e = Assert.ThrowsException<WinDivertException>(() => divert.SendEx(recv.Span, addr.Span));
+            Assert.AreEqual(WinDivert.ControlCode.Send, e.ControlCode);
             Assert.AreEqual(1232, e.NativeErrorCode);
         }
 
@@ -272,8 +276,9 @@ namespace SharpDivertTests
             using var divert = new WinDivert("false", WinDivert.Layer.Network, 0, WinDivert.Flag.Sniff | WinDivert.Flag.RecvOnly);
             var param = divert.GetType().GetProperty(name)!;
             var invokeExc = Assert.ThrowsException<TargetInvocationException>(() => param.SetValue(divert, input));
-            var win32Exc = (Win32Exception)invokeExc.InnerException!;
-            Assert.AreEqual(87, win32Exc.NativeErrorCode);
+            var divertExc = (WinDivertException)invokeExc.InnerException!;
+            Assert.AreEqual(WinDivert.ControlCode.SetParam, divertExc.ControlCode);
+            Assert.AreEqual(87, divertExc.NativeErrorCode);
         }
 
         [TestMethod]

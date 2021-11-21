@@ -91,6 +91,19 @@ namespace SharpDivertTests
         [TestMethod]
         [DynamicData(nameof(Equals_NonEquivalentObject_Data))]
         public void Equals_NonEquivalentObject(IPv4Addr left, object? right) => Assert.IsFalse(left.Equals(right));
+
+        [TestMethod]
+        [DataRow("0.0.0.0")]
+        [DataRow("127.0.0.1")]
+        [DataRow("255.255.255.255")]
+        public void GetHashCode(string input)
+        {
+            var addr1 = IPv4Addr.Parse(input);
+            var addr2 = IPv4Addr.Parse(input);
+            var hash1 = addr1.GetHashCode();
+            var hash2 = addr2.GetHashCode();
+            Assert.AreEqual(hash1, hash2);
+        }
     }
 
     [TestClass]
@@ -143,6 +156,19 @@ namespace SharpDivertTests
         [TestMethod]
         [DynamicData(nameof(Equals_NonEquivalentObject_Data))]
         public void Equals_NonEquivalentObject(NetworkIPv4Addr left, object? right) => Assert.IsFalse(left.Equals(right));
+
+        [TestMethod]
+        [DataRow("0.0.0.0")]
+        [DataRow("127.0.0.1")]
+        [DataRow("255.255.255.255")]
+        public void GetHashCode(string input)
+        {
+            var addr1 = (NetworkIPv4Addr)IPv4Addr.Parse(input);
+            var addr2 = (NetworkIPv4Addr)IPv4Addr.Parse(input);
+            var hash1 = addr1.GetHashCode();
+            var hash2 = addr2.GetHashCode();
+            Assert.AreEqual(hash1, hash2);
+        }
     }
 
     [TestClass]
@@ -186,6 +212,19 @@ namespace SharpDivertTests
         [TestMethod]
         [DynamicData(nameof(Equals_NonEquivalentObject_Data))]
         public void Equals_NonEquivalentObject(IPv6Addr left, object? right) => Assert.IsFalse(left.Equals(right));
+
+        [TestMethod]
+        [DataRow("::")]
+        [DataRow("2001:db8:85a3::8a2e:370:7334")]
+        [DataRow("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")]
+        public void GetHashCode(string input)
+        {
+            var addr1 = IPv6Addr.Parse(input);
+            var addr2 = IPv6Addr.Parse(input);
+            var hash1 = addr1.GetHashCode();
+            var hash2 = addr2.GetHashCode();
+            Assert.AreEqual(hash1, hash2);
+        }
     }
 
     [TestClass]
@@ -259,5 +298,18 @@ namespace SharpDivertTests
         [TestMethod]
         [DynamicData(nameof(Equals_NonEquivalentObject_Data))]
         public void Equals_NonEquivalentObject(NetworkIPv6Addr left, object? right) => Assert.IsFalse(left.Equals(right));
+
+        [TestMethod]
+        [DataRow("::")]
+        [DataRow("2001:db8:85a3::8a2e:370:7334")]
+        [DataRow("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")]
+        public void GetHashCode(string input)
+        {
+            var addr1 = (NetworkIPv6Addr)IPv6Addr.Parse(input);
+            var addr2 = (NetworkIPv6Addr)IPv6Addr.Parse(input);
+            var hash1 = addr1.GetHashCode();
+            var hash2 = addr2.GetHashCode();
+            Assert.AreEqual(hash1, hash2);
+        }
     }
 }

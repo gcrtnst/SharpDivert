@@ -843,7 +843,7 @@ namespace SharpDivert
             return base.Equals(obj);
         }
 
-        public override int GetHashCode() => base.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(Raw);
     }
 
     /// <summary>
@@ -882,7 +882,7 @@ namespace SharpDivert
             return base.Equals(obj);
         }
 
-        public override int GetHashCode() => base.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(Raw);
     }
 
     /// <summary>
@@ -943,7 +943,7 @@ namespace SharpDivert
             return base.Equals(obj);
         }
 
-        public override int GetHashCode() => base.GetHashCode();
+        public override unsafe int GetHashCode() => HashCode.Combine(Raw[0], Raw[1], Raw[2], Raw[3]);
     }
 
     /// <summary>
@@ -992,7 +992,7 @@ namespace SharpDivert
             return base.Equals(addr);
         }
 
-        public override int GetHashCode() => base.GetHashCode();
+        public override unsafe int GetHashCode() => HashCode.Combine(Raw[0], Raw[1], Raw[2], Raw[3]);
     }
 
     /// <summary>

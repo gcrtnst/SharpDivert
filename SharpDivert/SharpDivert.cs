@@ -1045,6 +1045,7 @@ namespace SharpDivert
         public override string ToString() => ((uint)this).ToString();
     }
 
+#pragma warning disable CA2101
     internal static class NativeMethods
     {
         [DllImport("WinDivert.dll", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true, PreserveSig = true, SetLastError = true)]
@@ -1107,6 +1108,7 @@ namespace SharpDivert
         [DllImport("WinDivert.dll", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true, PreserveSig = true, SetLastError = false)]
         public static extern unsafe void WinDivertHelperHtonIPv6Address(uint* inAddr, uint* outAddr);
     }
+#pragma warning restore CA2101
 
     [StructLayout(LayoutKind.Explicit)]
     public unsafe struct WinDivertAddress

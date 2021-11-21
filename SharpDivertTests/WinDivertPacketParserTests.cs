@@ -51,7 +51,7 @@ namespace SharpDivertTests
         public WinDivertPacketParserTests()
         {
             var send = new byte[] { 0, 1, 2 };
-            var packet = new Memory<byte>(new byte[0xFF * 3]);
+            var packet = new Memory<byte>(new byte[WinDivert.MTUMax]);
             var abuf = (Span<WinDivertAddress>)stackalloc WinDivertAddress[3];
 
             using var sender = new UdpClient(new IPEndPoint(IPAddress.Loopback, Port1));

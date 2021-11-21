@@ -85,7 +85,7 @@ namespace SharpDivertTests
         [Timeout(250)]
         public void RecvEx_BufferProvided()
         {
-            var packet = (Span<byte>)stackalloc byte[0xFFFF];
+            var packet = (Span<byte>)stackalloc byte[WinDivert.MTUMax];
             var abuf = (Span<WinDivertAddress>)stackalloc WinDivertAddress[1];
 
             using var sender = new UdpClient(new IPEndPoint(IPAddress.Loopback, Port1));
@@ -108,7 +108,7 @@ namespace SharpDivertTests
         [Timeout(250)]
         public void RecvEx_OnlyPacketBufferProvided()
         {
-            var packet = (Span<byte>)stackalloc byte[0xFFFF];
+            var packet = (Span<byte>)stackalloc byte[WinDivert.MTUMax];
 
             using var sender = new UdpClient(new IPEndPoint(IPAddress.Loopback, Port1));
             sender.Connect(IPAddress.Loopback, Port2);
@@ -163,7 +163,7 @@ namespace SharpDivertTests
         [Timeout(250)]
         public void RecvEx_AlreadyShutdown()
         {
-            var packet = new Memory<byte>(new byte[0xFFFF]);
+            var packet = new Memory<byte>(new byte[WinDivert.MTUMax]);
             var abuf = new Memory<WinDivertAddress>(new WinDivertAddress[1]);
 
             using var divert = new WinDivert("false", WinDivert.Layer.Network, 0, WinDivert.Flag.Sniff | WinDivert.Flag.RecvOnly);
@@ -177,7 +177,7 @@ namespace SharpDivertTests
         [Timeout(1000)]
         public void SendEx_BufferProvided()
         {
-            var packet = (Span<byte>)stackalloc byte[0xFFFF];
+            var packet = (Span<byte>)stackalloc byte[WinDivert.MTUMax];
             var abuf = (Span<WinDivertAddress>)stackalloc WinDivertAddress[1];
 
             using var sender = new UdpClient(new IPEndPoint(IPAddress.Loopback, Port1));
@@ -202,7 +202,7 @@ namespace SharpDivertTests
         [Timeout(250)]
         public unsafe void SendEx_DeadPacketProvided()
         {
-            var packet = new Memory<byte>(new byte[0xFFFF]);
+            var packet = new Memory<byte>(new byte[WinDivert.MTUMax]);
             var abuf = new Memory<WinDivertAddress>(new WinDivertAddress[1]);
 
             using var sender = new UdpClient(new IPEndPoint(IPAddress.Loopback, Port1));

@@ -2,7 +2,7 @@
 using SharpDivert;
 
 using var divert = new WinDivert("(outbound and tcp.DstPort == 1234) or (inbound and tcp.SrcPort == 80)", WinDivert.Layer.Network, 0, 0);
-var recvBuf = new Memory<byte>(new byte[40 + 0xFFFF]);
+var recvBuf = new Memory<byte>(new byte[WinDivert.MTUMax]);
 var addrBuf = new Memory<WinDivertAddress>(new WinDivertAddress[1]);
 
 while (true)

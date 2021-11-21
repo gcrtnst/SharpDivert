@@ -53,6 +53,9 @@ namespace SharpDivert
     {
         private readonly SafeWinDivertHandle handle;
 
+        public const short PriorityHighest = 30000;
+        public const short PriorityLowest = -PriorityHighest;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="WinDivert"/> class.
         /// </summary>
@@ -88,6 +91,9 @@ namespace SharpDivert
             if (hraw == (IntPtr)(-1)) throw new WinDivertException(nameof(NativeMethods.WinDivertOpen));
             return new SafeWinDivertHandle(hraw, true);
         }
+
+        public const int BatchMax = 0xFF;
+        public const int MTUMax = 40 + 0xFFFF;
 
         /// <summary>
         /// Receives captured packets/events matching the filter passed to the constructor.

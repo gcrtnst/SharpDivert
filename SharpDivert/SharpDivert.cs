@@ -807,12 +807,12 @@ namespace SharpDivert
         /// </summary>
         /// <param name="addrStr">The address string.</param>
         /// <returns>Output address.</returns>
-        /// <exception cref="Win32Exception">Thrown if the parse fails.</exception>
+        /// <exception cref="WinDivertException">Thrown if the parse fails.</exception>
         public static unsafe IPv4Addr Parse(string addrStr)
         {
             var addr = new IPv4Addr();
             var success = NativeMethods.WinDivertHelperParseIPv4Address(addrStr, &addr.Raw);
-            if (!success) throw new Win32Exception();
+            if (!success) throw new WinDivertException(nameof(NativeMethods.WinDivertHelperParseIPv4Address));
             return addr;
         }
 
@@ -820,13 +820,13 @@ namespace SharpDivert
         /// Convert an IPv4 address into a string.
         /// </summary>
         /// <returns>The formatted string.</returns>
-        /// <exception cref="Win32Exception">Thrown if formatting fails.</exception>
+        /// <exception cref="WinDivertException">Thrown if formatting fails.</exception>
         public override unsafe string ToString()
         {
             var buffer = (Span<byte>)stackalloc byte[32];
             var success = false;
             fixed (byte* pBuffer = buffer) success = NativeMethods.WinDivertHelperFormatIPv4Address(Raw, pBuffer, (uint)buffer.Length);
-            if (!success) throw new Win32Exception();
+            if (!success) throw new WinDivertException(nameof(NativeMethods.WinDivertHelperFormatIPv4Address));
 
             var strlen = buffer.IndexOf((byte)0);
             return Encoding.ASCII.GetString(buffer[..strlen]);
@@ -858,7 +858,7 @@ namespace SharpDivert
         /// Convert an IPv4 address into a string.
         /// </summary>
         /// <returns>The formatted string.</returns>
-        /// <exception cref="Win32Exception">Thrown if formatting fails.</exception>
+        /// <exception cref="WinDivertException">Thrown if formatting fails.</exception>
         public override string ToString() => ((IPv4Addr)this).ToString();
 
         public static bool operator ==(NetworkIPv4Addr left, NetworkIPv4Addr right) => left.Equals(right);
@@ -898,12 +898,12 @@ namespace SharpDivert
         /// </summary>
         /// <param name="addrStr">The address string.</param>
         /// <returns>Output address.</returns>
-        /// <exception cref="Win32Exception">Thrown if the parse fails.</exception>
+        /// <exception cref="WinDivertException">Thrown if the parse fails.</exception>
         public static IPv6Addr Parse(string addrStr)
         {
             var addr = new IPv6Addr();
             var success = NativeMethods.WinDivertHelperParseIPv6Address(addrStr, addr.Raw);
-            if (!success) throw new Win32Exception();
+            if (!success) throw new WinDivertException(nameof(NativeMethods.WinDivertHelperParseIPv6Address));
             return addr;
         }
 
@@ -911,7 +911,7 @@ namespace SharpDivert
         /// Convert an IPv6 address into a string.
         /// </summary>
         /// <returns>The formatted string.</returns>
-        /// <exception cref="Win32Exception">Thrown if formatting fails.</exception>
+        /// <exception cref="WinDivertException">Thrown if formatting fails.</exception>
         public override string ToString()
         {
             var buffer = (Span<byte>)stackalloc byte[64];
@@ -920,7 +920,7 @@ namespace SharpDivert
             {
                 success = NativeMethods.WinDivertHelperFormatIPv6Address(addr, pBuffer, (uint)buffer.Length);
             }
-            if (!success) throw new Win32Exception();
+            if (!success) throw new WinDivertException(nameof(NativeMethods.WinDivertHelperFormatIPv6Address));
 
             var strlen = buffer.IndexOf((byte)0);
             return Encoding.ASCII.GetString(buffer[..strlen]);
@@ -958,7 +958,7 @@ namespace SharpDivert
         /// Convert an IPv6 address into a string.
         /// </summary>
         /// <returns>The formatted string.</returns>
-        /// <exception cref="Win32Exception">Thrown if formatting fails.</exception>
+        /// <exception cref="WinDivertException">Thrown if formatting fails.</exception>
         public override string ToString() => ((IPv6Addr)this).ToString();
 
         public static bool operator ==(NetworkIPv6Addr left, NetworkIPv6Addr right) => left.Equals(right);

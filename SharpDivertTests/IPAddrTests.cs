@@ -57,7 +57,8 @@ namespace SharpDivertTests
         [DataRow("2001:db8:85a3::8a2e:370:7334")]
         public void Parse_InvalidString(string input)
         {
-            var e = Assert.ThrowsException<Win32Exception>(() => IPv4Addr.Parse(input));
+            var e = Assert.ThrowsException<WinDivertException>(() => IPv4Addr.Parse(input));
+            Assert.AreEqual("WinDivertHelperParseIPv4Address", e.WinDivertNativeMethod);
             Assert.AreEqual(87, e.NativeErrorCode);
         }
 
@@ -188,7 +189,8 @@ namespace SharpDivertTests
         [DataRow("")]
         public void Parse_InvalidString(string input)
         {
-            var e = Assert.ThrowsException<Win32Exception>(() => IPv6Addr.Parse(input));
+            var e = Assert.ThrowsException<WinDivertException>(() => IPv6Addr.Parse(input));
+            Assert.AreEqual("WinDivertHelperParseIPv6Address", e.WinDivertNativeMethod);
             Assert.AreEqual(87, e.NativeErrorCode);
         }
 

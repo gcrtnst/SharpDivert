@@ -85,7 +85,7 @@ namespace SharpDivert
 
             var hraw = (IntPtr)(-1);
             fixed (byte* pFilter = filter) hraw = NativeMethods.WinDivertOpen(pFilter, layer, priority, flags);
-            if (hraw == (IntPtr)(-1)) throw new WinDivertException(ControlCode.Open);
+            if (hraw == (IntPtr)(-1)) throw new WinDivertException(nameof(NativeMethods.WinDivertOpen));
             return new SafeWinDivertHandle(hraw, true);
         }
 
@@ -114,7 +114,7 @@ namespace SharpDivert
                 {
                     success = NativeMethods.WinDivertRecvEx(href.RawHandle, pPacket, (uint)packet.Length, &recvLen, 0, pAbuf, pAddrLen, null);
                 }
-                if (!success) throw new WinDivertException(ControlCode.Recv);
+                if (!success) throw new WinDivertException(nameof(NativeMethods.WinDivertRecvEx));
             }
 
             addrLen /= (uint)sizeof(WinDivertAddress);
@@ -137,7 +137,7 @@ namespace SharpDivert
             {
                 success = NativeMethods.WinDivertSendEx(href.RawHandle, pPacket, (uint)packet.Length, &sendLen, 0, pAddr, (uint)(addr.Length * sizeof(WinDivertAddress)), null);
             }
-            if (!success) throw new WinDivertException(ControlCode.Send);
+            if (!success) throw new WinDivertException(nameof(NativeMethods.WinDivertSendEx));
             return sendLen;
         }
 
@@ -203,7 +203,7 @@ namespace SharpDivert
         {
             using var href = new SafeHandleReference(handle, (IntPtr)(-1));
             var success = NativeMethods.WinDivertGetParam(href.RawHandle, param, out var value);
-            if (!success) throw new WinDivertException(ControlCode.GetParam);
+            if (!success) throw new WinDivertException(nameof(NativeMethods.WinDivertGetParam));
             return value;
         }
 
@@ -211,7 +211,7 @@ namespace SharpDivert
         {
             using var href = new SafeHandleReference(handle, (IntPtr)(-1));
             var success = NativeMethods.WinDivertSetParam(href.RawHandle, param, value);
-            if (!success) throw new WinDivertException(ControlCode.SetParam);
+            if (!success) throw new WinDivertException(nameof(NativeMethods.WinDivertSetParam));
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace SharpDivert
         {
             using var href = new SafeHandleReference(handle, (IntPtr)(-1));
             var success = NativeMethods.WinDivertShutdown(href.RawHandle, how);
-            if (!success) throw new WinDivertException(ControlCode.Shutdown);
+            if (!success) throw new WinDivertException(nameof(NativeMethods.WinDivertShutdown));
         }
 
         /// <summary>
@@ -466,42 +466,6 @@ namespace SharpDivert
             /// </summary>
             NoUDPChecksum = 16,
         }
-
-        /// <summary>
-        /// The code for the operation, mainly used in <see cref="WinDivertException"/>.
-        /// </summary>
-        public enum ControlCode
-        {
-            /// <summary>
-            /// Code corresponding to <c>WinDivertOpen</c>.
-            /// </summary>
-            Open,
-
-            /// <summary>
-            /// Code corresponding to <c>WinDivertRecvEx</c>.
-            /// </summary>
-            Recv,
-
-            /// <summary>
-            /// Code corresponding to <c>WinDivertSendEx</c>.
-            /// </summary>
-            Send,
-
-            /// <summary>
-            /// Code corresponding to <c>WinDivertGetParam</c>.
-            /// </summary>
-            GetParam,
-
-            /// <summary>
-            /// Code corresponding to <c>WinDivertSetParam</c>.
-            /// </summary>
-            SetParam,
-
-            /// <summary>
-            /// Code corresponding to <c>WinDivertShutdown</c>.
-            /// </summary>
-            Shutdown,
-        }
     }
 
     internal class SafeWinDivertHandle : SafeHandleZeroOrMinusOneIsInvalid
@@ -564,9 +528,9 @@ namespace SharpDivert
         /// <summary>
         /// Get the code of the operation that caused this error.
         /// </summary>
-        public WinDivert.ControlCode ControlCode { get; }
+        public string WinDivertNativeMethod { get; }
 
-        internal WinDivertException(WinDivert.ControlCode controlCode) : base() => ControlCode = controlCode;
+        internal WinDivertException(string method) : base() => WinDivertNativeMethod = method;
     }
 
     /// <summary>

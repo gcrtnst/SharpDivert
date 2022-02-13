@@ -35,6 +35,7 @@ while (true)
                 p.TCPHdr->SrcPort = 1234;
             }
         }
+        WinDivert.CalcChecksums(p.Packet.Span, ref addr.Span[i], 0);
     }
     _ = divert.SendEx(recv.Span, addr.Span);
 }

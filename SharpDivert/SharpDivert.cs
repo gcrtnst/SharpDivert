@@ -298,6 +298,28 @@ namespace SharpDivert
             return fobj;
         }
 
+        /// <summary>
+        /// Formats the given filter string or object.
+        /// </summary>
+        /// <param name="filter">The packet filter string to be evaluated. Passing non-null-terminated data may cause out-of-bounds access.</param>
+        /// <param name="layer">The layer.</param>
+        /// <returns>The formatted filter.</returns>
+        /// <exception cref="WinDivertException">Thrown when the <paramref name="filter"/> is invalid.</exception>
+        public static unsafe string FormatFilter(ReadOnlySpan<byte> filter, Layer layer)
+        {
+            var buffer = (Span<byte>)stackalloc byte[30000];
+            var success = false;
+
+            fixed (byte* pFilter = filter) fixed (byte* pBuffer = buffer)
+            {
+                success = NativeMethods.WinDivertHelperFormatFilter(pFilter, layer, pBuffer, (uint)buffer.Length);
+            }
+            if (!success) throw new WinDivertException(nameof(NativeMethods.WinDivertHelperFormatFilter));
+
+            var strlen = buffer.IndexOf((byte)0);
+            return Encoding.ASCII.GetString(buffer[..strlen]);
+        }
+
         public enum Layer
         {
             /// <summary>
@@ -1095,6 +1117,9 @@ namespace SharpDivert
 
         [DllImport("WinDivert.dll", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true, PreserveSig = true, SetLastError = false)]
         public static extern unsafe bool WinDivertHelperCompileFilter(string filter, WinDivert.Layer layer, byte* fobj, uint fobjLen, byte** errorStr, uint* errorPos);
+
+        [DllImport("WinDivert.dll", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true, PreserveSig = true, SetLastError = true)]
+        public static extern unsafe bool WinDivertHelperFormatFilter(byte* filter, WinDivert.Layer layer, byte* buffer, uint bufLen);
 
         [DllImport("WinDivert.dll", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true, PreserveSig = true, SetLastError = false)]
         public static extern ushort WinDivertHelperNtohs(ushort x);

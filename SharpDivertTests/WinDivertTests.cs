@@ -37,6 +37,7 @@ using System.ComponentModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SharpDivert;
 
@@ -384,6 +385,42 @@ namespace SharpDivertTests
             var e = Assert.ThrowsException<WinDivertInvalidFilterException>(() => WinDivert.CompileFilter(filter, layer));
             Assert.AreEqual(errorStr, e.FilterErrorStr);
             Assert.AreEqual(errorPos, e.FilterErrorPos);
+        }
+
+        [TestMethod]
+        [DataRow("outbound and not loopback and (tcp.DstPort = 80 or udp.DstPort = 53)", WinDivert.Layer.Network)]
+        [DataRow("inbound and tcp.Syn", WinDivert.Layer.Network)]
+        [DataRow("true", WinDivert.Layer.Network)]
+        [DataRow("false", WinDivert.Layer.Network)]
+        public void FormatFilter_ValidFilterString(string filter, WinDivert.Layer layer)
+        {
+            var fstr = Encoding.ASCII.GetBytes(filter);
+            var actual = WinDivert.FormatFilter(fstr.AsSpan(), layer);
+            Assert.AreEqual(filter, actual);
+        }
+
+        [TestMethod]
+        [DataRow("outbound and not loopback and (tcp.DstPort = 80 or udp.DstPort = 53)", WinDivert.Layer.Network)]
+        [DataRow("inbound and tcp.Syn", WinDivert.Layer.Network)]
+        [DataRow("true", WinDivert.Layer.Network)]
+        [DataRow("false", WinDivert.Layer.Network)]
+        public void FormatFilter_ValidFilterObject(string filter, WinDivert.Layer layer)
+        {
+            var fobj = WinDivert.CompileFilter(filter, layer);
+            var actual = WinDivert.FormatFilter(fobj.Span, layer);
+            Assert.AreEqual(filter, actual);
+        }
+
+        [TestMethod]
+        [DataRow("", WinDivert.Layer.Network)]
+        [DataRow("invalid", WinDivert.Layer.Network)]
+        [DataRow("zero == invalid", WinDivert.Layer.Network)]
+        public void FormatFilter_InvalidFilter(string filter, WinDivert.Layer layer)
+        {
+            var fstr = Encoding.ASCII.GetBytes(filter);
+            var e = Assert.ThrowsException<WinDivertException>(() => WinDivert.FormatFilter(fstr.AsSpan(), layer));
+            Assert.AreEqual("WinDivertHelperFormatFilter", e.WinDivertNativeMethod);
+            Assert.AreEqual(87, e.NativeErrorCode);
         }
     }
 }

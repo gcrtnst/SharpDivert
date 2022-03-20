@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <Version>1.0.1</Version>
+    <Version>1.1.0-beta.1</Version>
     <Authors>gcrtnst</Authors>
     <Copyright>Copyright gcrtnst</Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
@@ -16,9 +16,6 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Description>.NET bindings for WinDivert</Description>
-    <PackageReleaseNotes>- The documentation file is now included.
-- Fixed license not being displayed when installing from NuGet.
-- Added package description.</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

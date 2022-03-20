@@ -554,7 +554,7 @@ namespace SharpDivert
     public class WinDivertException : Win32Exception
     {
         /// <summary>
-        /// Get the code of the operation that caused this error.
+        /// Get the name of the native function that caused this error.
         /// </summary>
         public string WinDivertNativeMethod { get; }
 

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net5.0;net8.0</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <Version>1.1.0-beta.1</Version>
+    <Version>1.1.0-beta.2</Version>
     <Authors>gcrtnst</Authors>
     <Copyright>Copyright gcrtnst</Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
@@ -16,6 +16,21 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Description>.NET bindings for WinDivert</Description>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageReleaseNotes>Changes since v1.0.1
+
+- Added support for .NET 8.0
+- Added `WinDivert.FormatFilter` method.
+- The following constants were added.
+  - `QueueLengthDefault`, `QueueLengthMin`, `QueueLengthMax`
+  - `QueueTimeDefault`, `QueueTimeMin`, `QueueTimeMax`
+  - `QueueSizeDefault`, `QueueSizeMin`, `QueueSizeMax`
+  - `PriorityHighest`, `PriorityLowest`
+  - `BatchMax`
+  - `MTUMax`
+- SharpDivert now throws `WinDivertException` instead of `Win32Exception`. Users can now use the `WinDivertNativeMethod` field of `WinDivertException` to more accurately determine the source of the error.
+- Some exceptions now output appropriate error messages.
+- Minor fixes to `GetHashCode` for some types.
+- Updated documentation, etc.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

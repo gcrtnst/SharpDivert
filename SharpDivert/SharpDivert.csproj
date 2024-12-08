@@ -8,7 +8,6 @@
     <Copyright>Copyright gcrtnst</Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <SignAssembly>false</SignAssembly>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <PackageProjectUrl>https://github.com/gcrtnst/SharpDivert</PackageProjectUrl>
     <RepositoryUrl>https://github.com/gcrtnst/SharpDivert</RepositoryUrl>
@@ -16,13 +15,6 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Description>.NET bindings for WinDivert</Description>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
